@@ -9,9 +9,10 @@ import {
   Users, 
   Target,
   Calendar,
-  BarChart3
+  BarChart3,
+  Loader2
 } from "lucide-react";
-import { mockDashboardStats } from "@/data/mockData";
+import { useDashboardStats } from "@/hooks/useApi";
 
 const StatCard = ({ 
   title, 
@@ -72,30 +73,104 @@ const StatCard = ({
 };
 
 export function DashboardStats() {
-  const stats = mockDashboardStats;
-  const todoProgress = (stats.todosOverview.completed / stats.todosOverview.total) * 100;
-  const budgetProgress = (stats.campaignsOverview.totalSpent / stats.campaignsOverview.totalBudget) * 100;
+  const { data: dashboardStats, loading, error } = useDashboardStats();
+
+  if (loading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="animate-pulse">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div className="h-4 bg-muted rounded w-20"></div>
+              <div className="w-8 h-8 bg-muted rounded-lg"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-8 bg-muted rounded w-16 mb-2"></div>
+              <div className="h-3 bg-muted rounded w-24"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="col-span-full">
+          <CardContent className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <p className="text-destructive mb-2">Fehler beim Laden der Dashboard-Statistiken</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!dashboardStats) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Offene ToDos"
+          value={0}
+          subtitle="Keine Daten verfügbar"
+          icon={CheckCircle2}
+          color="primary"
+        />
+        <StatCard
+          title="Aktive Kampagnen"
+          value={0}
+          subtitle="Keine Daten verfügbar"
+          icon={Target}
+          color="primary"
+        />
+        <StatCard
+          title="Neue Leads"
+          value={0}
+          subtitle="Keine Daten verfügbar"
+          icon={Users}
+          color="primary"
+        />
+        <StatCard
+          title="LinkedIn Posts"
+          value={0}
+          subtitle="Keine Daten verfügbar"
+          icon={BarChart3}
+          color="primary"
+        />
+      </div>
+    );
+  }
+
+  const todoProgress = dashboardStats.todosOverview ? 
+    (dashboardStats.todosOverview.completed / dashboardStats.todosOverview.total) * 100 : 0;
+  const budgetProgress = dashboardStats.campaignsOverview && dashboardStats.campaignsOverview.totalBudget > 0 ? 
+    (dashboardStats.campaignsOverview.totalSpent / dashboardStats.campaignsOverview.totalBudget) * 100 : 0;
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {/* Todo Overview */}
       <StatCard
         title="Offene ToDos"
-        value={stats.todosOverview.pending + stats.todosOverview.inProgress}
-        subtitle={`${stats.todosOverview.overdue} überfällig`}
+        value={dashboardStats.todosOverview ? 
+          dashboardStats.todosOverview.pending + dashboardStats.todosOverview.inProgress : 0}
+        subtitle={dashboardStats.todosOverview ? 
+          `${dashboardStats.todosOverview.overdue || 0} überfällig` : "Keine Daten"}
         icon={CheckCircle2}
         progress={todoProgress}
         trend={-12}
-        color={stats.todosOverview.overdue > 0 ? "warning" : "success"}
+        color={dashboardStats.todosOverview?.overdue > 0 ? "warning" : "success"}
       />
 
       {/* Campaign Performance */}
       <StatCard
         title="Aktive Kampagnen"
-        value={stats.campaignsOverview.active}
+        value={dashboardStats.campaignsOverview?.active || 0}
         subtitle={`${budgetProgress.toFixed(1)}% Budget verwendet`}
         icon={Target}
-        progress={stats.campaignsOverview.avgPerformance}
+        progress={dashboardStats.campaignsOverview?.avgPerformance || 0}
         trend={15}
         color="primary"
       />
@@ -103,8 +178,8 @@ export function DashboardStats() {
       {/* Leads Overview */}
       <StatCard
         title="Neue Leads"
-        value={stats.leadsOverview.new}
-        subtitle={`${stats.leadsOverview.conversion}% Conversion Rate`}
+        value={dashboardStats.leadsOverview?.new || 0}
+        subtitle={`${dashboardStats.leadsOverview?.conversion || 0}% Conversion Rate`}
         icon={Users}
         trend={8}
         color="success"
@@ -112,11 +187,11 @@ export function DashboardStats() {
 
       {/* Social Media */}
       <StatCard
-        title="LinkedIn Engagement"
-        value={`${(stats.socialMediaOverview.totalEngagement / 1000).toFixed(1)}k`}
-        subtitle={`+${stats.socialMediaOverview.followerGrowth}% Follower Growth`}
+        title="LinkedIn Posts"
+        value={dashboardStats.socialMediaOverview?.scheduledPosts || 0}
+        subtitle={`${dashboardStats.socialMediaOverview?.pendingApproval || 0} warten auf Freigabe`}
         icon={BarChart3}
-        trend={stats.socialMediaOverview.followerGrowth}
+        trend={dashboardStats.socialMediaOverview?.followerGrowth || 0}
         color="primary"
       />
     </div>

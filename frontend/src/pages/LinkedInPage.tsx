@@ -5,6 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { 
   FileText, 
   Calendar as CalendarIcon, 
@@ -16,34 +19,50 @@ import {
   Heart,
   MessageSquare,
   Share2,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from "lucide-react";
-import { mockLinkedInPosts } from "@/data/mockData";
+import { useLinkedInPosts } from "@/hooks/useApi";
+import { apiService } from "@/lib/api";
 import { useState } from "react";
 
-const PostCard = ({ post }: { post: any }) => {
+const PostCard = ({ post, onUpdate }: { post: any; onUpdate: () => void }) => {
+  const [approving, setApproving] = useState(false);
+
   const getStatusColor = (status: string) => {
     const colors = {
-      draft: 'bg-muted text-muted-foreground',
-      'pending-approval': 'bg-warning text-warning-foreground',
-      approved: 'bg-success text-success-foreground',
-      scheduled: 'bg-primary text-primary-foreground',
-      published: 'bg-accent text-accent-foreground',
-      rejected: 'bg-destructive text-destructive-foreground'
+      DRAFT: 'bg-muted text-muted-foreground',
+      PENDING_APPROVAL: 'bg-warning text-warning-foreground',
+      APPROVED: 'bg-success text-success-foreground',
+      SCHEDULED: 'bg-primary text-primary-foreground',
+      PUBLISHED: 'bg-accent text-accent-foreground',
+      REJECTED: 'bg-destructive text-destructive-foreground'
     };
-    return colors[status as keyof typeof colors] || colors.draft;
+    return colors[status as keyof typeof colors] || colors.DRAFT;
   };
 
   const getStatusText = (status: string) => {
     const texts = {
-      draft: 'Entwurf',
-      'pending-approval': 'Wartet auf Freigabe',
-      approved: 'Freigegeben',
-      scheduled: 'Geplant',
-      published: 'Veröffentlicht',
-      rejected: 'Abgelehnt'
+      DRAFT: 'Entwurf',
+      PENDING_APPROVAL: 'Wartet auf Freigabe',
+      APPROVED: 'Freigegeben',
+      SCHEDULED: 'Geplant',
+      PUBLISHED: 'Veröffentlicht',
+      REJECTED: 'Abgelehnt'
     };
     return texts[status as keyof typeof texts] || 'Unbekannt';
+  };
+
+  const handleApprove = async () => {
+    setApproving(true);
+    try {
+      await apiService.approveLinkedInPost(post.id);
+      onUpdate();
+    } catch (error) {
+      console.error('Failed to approve post:', error);
+    } finally {
+      setApproving(false);
+    }
   };
 
   return (
@@ -124,21 +143,121 @@ const PostCard = ({ post }: { post: any }) => {
           <Button size="sm" variant="outline" className="flex-1">
             Bearbeiten
           </Button>
-          <Button size="sm" className="flex-1">
-            {post.status === 'draft' ? 'Zur Freigabe' : 'Details'}
-          </Button>
+          {post.status === 'PENDING_APPROVAL' ? (
+            <Button 
+              size="sm" 
+              className="flex-1"
+              onClick={handleApprove}
+              disabled={approving}
+            >
+              {approving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Freigeben'}
+            </Button>
+          ) : (
+            <Button size="sm" className="flex-1">
+              Details
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 };
 
-const CalendarView = () => {
+const CreatePostDialog = ({ onPostCreated }: { onPostCreated: () => void }) => {
+  const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [formData, setFormData] = useState({
+    content: '',
+    hashtags: '',
+    scheduledDate: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreating(true);
+    
+    try {
+      const postData = {
+        content: formData.content,
+        hashtags: formData.hashtags ? formData.hashtags.split(',').map(tag => tag.trim()) : [],
+        scheduledDate: formData.scheduledDate ? new Date(formData.scheduledDate).toISOString() : undefined
+      };
+
+      const response = await apiService.createLinkedInPost(postData);
+      if (response.success) {
+        setOpen(false);
+        setFormData({ content: '', hashtags: '', scheduledDate: '' });
+        onPostCreated();
+      }
+    } catch (error) {
+      console.error('Failed to create post:', error);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Neuen Post erstellen
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Neuen LinkedIn-Post erstellen</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Content</label>
+            <Textarea
+              value={formData.content}
+              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              rows={6}
+              placeholder="Schreiben Sie hier Ihren LinkedIn-Post..."
+              required
+            />
+            <div className="text-xs text-muted-foreground mt-1">
+              {formData.content.length}/3000 Zeichen
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Hashtags (kommagetrennt)</label>
+            <Input
+              value={formData.hashtags}
+              onChange={(e) => setFormData({ ...formData, hashtags: e.target.value })}
+              placeholder="München, Immobilien, Villa, Luxus"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Zeitplan (optional)</label>
+            <Input
+              type="datetime-local"
+              value={formData.scheduledDate}
+              onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button type="submit" disabled={creating}>
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Erstellen'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const CalendarView = ({ posts }: { posts: any[] }) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
-  const scheduledPosts = mockLinkedInPosts.filter(post => 
-    post.scheduledDate && post.scheduledDate > new Date()
-  );
+  const scheduledPosts = posts?.filter(post => 
+    post.scheduledDate && new Date(post.scheduledDate) > new Date()
+  ) || [];
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -188,8 +307,8 @@ const CalendarView = () => {
   );
 };
 
-const AnalyticsView = () => {
-  const publishedPosts = mockLinkedInPosts.filter(post => post.analytics);
+const AnalyticsView = ({ posts }: { posts: any[] }) => {
+  const publishedPosts = posts?.filter(post => post.analytics) || [];
   const totalViews = publishedPosts.reduce((sum, post) => sum + (post.analytics?.views || 0), 0);
   const totalEngagement = publishedPosts.reduce((sum, post) => 
     sum + (post.analytics?.likes || 0) + (post.analytics?.comments || 0) + (post.analytics?.shares || 0), 0
@@ -282,6 +401,8 @@ const AnalyticsView = () => {
 };
 
 export default function LinkedInPage() {
+  const { data: posts, loading, error, refetch } = useLinkedInPosts();
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -292,10 +413,7 @@ export default function LinkedInPage() {
               Content-Erstellung, Planungs-Kalender und Performance-Analytics
             </p>
           </div>
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Neuen Post erstellen
-          </Button>
+          <CreatePostDialog onPostCreated={refetch} />
         </div>
 
         <Tabs defaultValue="editor" className="space-y-6">
@@ -315,19 +433,36 @@ export default function LinkedInPage() {
           </TabsList>
 
           <TabsContent value="editor" className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {mockLinkedInPosts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <span className="ml-2">Lade Posts...</span>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-destructive mb-4">Fehler beim Laden der Posts: {error}</p>
+                <Button onClick={refetch}>Erneut versuchen</Button>
+              </div>
+            ) : posts && posts.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {posts.map((post) => (
+                  <PostCard key={post.id} post={post} onUpdate={refetch} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">Keine Posts vorhanden</p>
+                <CreatePostDialog onPostCreated={refetch} />
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="calendar" className="space-y-6">
-            <CalendarView />
+            <CalendarView posts={posts || []} />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            <AnalyticsView />
+            <AnalyticsView posts={posts || []} />
           </TabsContent>
         </Tabs>
       </div>

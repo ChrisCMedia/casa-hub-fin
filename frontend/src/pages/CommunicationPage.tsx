@@ -5,6 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   MessageSquare, 
   Users, 
@@ -15,29 +19,48 @@ import {
   Lightbulb,
   Calendar,
   FileText,
-  User
+  User,
+  Loader2
 } from "lucide-react";
-import { mockTodos, mockMarketingPartners, mockAIImpulse } from "@/data/mockData";
+import { useTodos } from "@/hooks/useApi";
+import { apiService } from "@/lib/api";
+import { mockMarketingPartners, mockAIImpulse } from "@/data/mockData";
+import { useState } from "react";
 
-const TodoCard = ({ todo }: { todo: any }) => {
+const TodoCard = ({ todo, onUpdate }: { todo: any, onUpdate: () => void }) => {
+  const [todoDetailsOpen, setTodoDetailsOpen] = useState(false);
+  const [updating, setUpdating] = useState(false);
+
   const getPriorityColor = (priority: string) => {
     const colors = {
-      urgent: 'bg-destructive text-destructive-foreground',
-      high: 'bg-warning text-warning-foreground',
-      medium: 'bg-primary text-primary-foreground',
-      low: 'bg-success text-success-foreground'
+      URGENT: 'bg-destructive text-destructive-foreground',
+      HIGH: 'bg-warning text-warning-foreground',
+      MEDIUM: 'bg-primary text-primary-foreground',
+      LOW: 'bg-success text-success-foreground'
     };
-    return colors[priority as keyof typeof colors] || colors.medium;
+    return colors[priority as keyof typeof colors] || colors.MEDIUM;
   };
 
   const getStatusColor = (status: string) => {
     const colors = {
-      pending: 'text-muted-foreground',
-      'in-progress': 'text-primary',
-      completed: 'text-success',
-      cancelled: 'text-destructive'
+      PENDING: 'text-muted-foreground',
+      IN_PROGRESS: 'text-primary',
+      COMPLETED: 'text-success',
+      CANCELLED: 'text-destructive'
     };
-    return colors[status as keyof typeof colors] || colors.pending;
+    return colors[status as keyof typeof colors] || colors.PENDING;
+  };
+
+  const handleStatusUpdate = async (newStatus: string) => {
+    setUpdating(true);
+    try {
+      await apiService.updateTodo(todo.id, { status: newStatus });
+      onUpdate();
+    } catch (error) {
+      console.error('Failed to update todo:', error);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
@@ -46,7 +69,7 @@ const TodoCard = ({ todo }: { todo: any }) => {
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-base leading-tight">{todo.title}</CardTitle>
           <Badge className={`text-xs ${getPriorityColor(todo.priority)}`}>
-            {todo.priority.toUpperCase()}
+            {todo.priority}
           </Badge>
         </div>
       </CardHeader>
@@ -56,19 +79,19 @@ const TodoCard = ({ todo }: { todo: any }) => {
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <User className="h-3 w-3" />
-            {mockMarketingPartners.find(p => p.id === todo.assignedTo)?.name || 'Unbekannt'}
+            {todo.assignee?.name || 'Unbekannt'}
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            {todo.dueDate.toLocaleDateString('de-DE')}
+            {todo.dueDate ? new Date(todo.dueDate).toLocaleDateString('de-DE') : 'Kein Datum'}
           </div>
           <div className={`flex items-center gap-1 ${getStatusColor(todo.status)}`}>
-            {todo.status === 'completed' ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-            {todo.status.replace('-', ' ')}
+            {todo.status === 'COMPLETED' ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+            {todo.status.replace('_', ' ')}
           </div>
         </div>
 
-        {todo.tags.length > 0 && (
+        {todo.tags && todo.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {todo.tags.map((tag: string, index: number) => (
               <Badge key={index} variant="outline" className="text-xs">
@@ -80,11 +103,66 @@ const TodoCard = ({ todo }: { todo: any }) => {
 
         <div className="flex justify-between items-center">
           <span className="text-xs text-muted-foreground">
-            {todo.comments.length} Kommentare
+            {todo.comments?.length || 0} Kommentare
           </span>
-          <Button size="sm" variant="outline">
-            Details
-          </Button>
+          <div className="flex gap-2">
+            {todo.status !== 'COMPLETED' && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => handleStatusUpdate('COMPLETED')}
+                disabled={updating}
+              >
+                {updating ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+              </Button>
+            )}
+            <Dialog open={todoDetailsOpen} onOpenChange={setTodoDetailsOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                  Details
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>{todo.title}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Beschreibung</h4>
+                    <p className="text-sm text-muted-foreground">{todo.description}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="text-sm font-medium mb-1">Priorität</h4>
+                      <Badge className={getPriorityColor(todo.priority)}>{todo.priority}</Badge>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium mb-1">Status</h4>
+                      <Badge variant="outline">{todo.status.replace('_', ' ')}</Badge>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium mb-1">Zugewiesen an</h4>
+                      <p className="text-sm">{todo.assignee?.name || 'Unbekannt'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium mb-1">Fälligkeitsdatum</h4>
+                      <p className="text-sm">{todo.dueDate ? new Date(todo.dueDate).toLocaleDateString('de-DE') : 'Kein Datum'}</p>
+                    </div>
+                  </div>
+                  {todo.tags && todo.tags.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">Tags</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {todo.tags.map((tag: string, index: number) => (
+                          <Badge key={index} variant="outline">{tag}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -227,7 +305,125 @@ const AIImpulsCard = ({ impuls }: { impuls: any }) => {
   );
 };
 
+const CreateTodoDialog = ({ onTodoCreated }: { onTodoCreated: () => void }) => {
+  const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    priority: 'MEDIUM',
+    dueDate: '',
+    tags: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreating(true);
+    
+    try {
+      const todoData = {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
+        dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : undefined,
+        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : []
+      };
+
+      const response = await apiService.createTodo(todoData);
+      if (response.success) {
+        setOpen(false);
+        setFormData({
+          title: '',
+          description: '',
+          priority: 'MEDIUM',
+          dueDate: '',
+          tags: ''
+        });
+        onTodoCreated();
+      }
+    } catch (error) {
+      console.error('Failed to create todo:', error);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Neues ToDo
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Neues ToDo erstellen</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Titel</label>
+            <Input
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Beschreibung</label>
+            <Textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={3}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Priorität</label>
+            <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="LOW">Niedrig</SelectItem>
+                <SelectItem value="MEDIUM">Mittel</SelectItem>
+                <SelectItem value="HIGH">Hoch</SelectItem>
+                <SelectItem value="URGENT">Dringend</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Fälligkeitsdatum</label>
+            <Input
+              type="datetime-local"
+              value={formData.dueDate}
+              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Tags (kommagetrennt)</label>
+            <Input
+              value={formData.tags}
+              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+              placeholder="LinkedIn, Marketing, Design"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button type="submit" disabled={creating}>
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Erstellen'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function CommunicationPage() {
+  const { data: todos, loading, error, refetch } = useTodos();
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -238,10 +434,7 @@ export default function CommunicationPage() {
               Koordination mit Marketing-Partnern, ToDo-Management und KI-Impulse
             </p>
           </div>
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Neues ToDo
-          </Button>
+          <CreateTodoDialog onTodoCreated={refetch} />
         </div>
 
         <Tabs defaultValue="todos" className="space-y-6">
@@ -261,11 +454,28 @@ export default function CommunicationPage() {
           </TabsList>
 
           <TabsContent value="todos" className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {mockTodos.map((todo) => (
-                <TodoCard key={todo.id} todo={todo} />
-              ))}
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <span className="ml-2">Lade ToDos...</span>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-destructive mb-4">Fehler beim Laden der ToDos: {error}</p>
+                <Button onClick={refetch}>Erneut versuchen</Button>
+              </div>
+            ) : todos && todos.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {todos.map((todo) => (
+                  <TodoCard key={todo.id} todo={todo} onUpdate={refetch} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">Keine ToDos vorhanden</p>
+                <CreateTodoDialog onTodoCreated={refetch} />
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="partners" className="space-y-6">
