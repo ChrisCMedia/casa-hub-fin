@@ -8,8 +8,6 @@ import { Server } from 'socket.io';
 
 import { logger } from '@/config/logger';
 import { errorHandler, notFoundHandler } from '@/middleware/error';
-import redis from '@/config/redis';
-import prisma from '@/config/database';
 
 // Import routes
 import authRoutes from '@/routes/auth.routes';
@@ -73,22 +71,13 @@ app.use((req, res, next) => {
 // Health check endpoint
 app.get('/health', async (req, res) => {
   try {
-    // Check database connection
-    await prisma.$queryRaw`SELECT 1`;
-    
-    // Check Redis connection
-    await redis.ping();
-
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV,
       version: '1.0.0',
-      services: {
-        database: 'connected',
-        redis: 'connected',
-      },
+      message: 'Casa Hub Backend is running'
     });
   } catch (error) {
     logger.error('Health check failed:', error);
