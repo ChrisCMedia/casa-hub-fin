@@ -7,7 +7,7 @@ import { logger } from '@/config/logger';
 import { PropertyType, PropertyStatus, UserRole } from '@prisma/client';
 
 export class PropertyController {
-  static getProperties = asyncHandler(async (req: AuthenticatedRequest<{}, ApiResponse, {}, PropertyFilters>, res: Response<ApiResponse>) => {
+  static getProperties = asyncHandler(async (req: AuthenticatedRequest, res: Response<ApiResponse>) => {
     const { page, limit, skip, sortBy, sortOrder } = getPaginationParams(req.query);
     const { type, status, minPrice, maxPrice, minArea, maxArea, agent } = req.query;
 

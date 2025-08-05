@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import { User } from '@prisma/client';
 
 declare global {
@@ -12,6 +13,9 @@ declare global {
 export interface AuthenticatedRequest extends Request {
   user: User;
   userId: string;
+  body: any;
+  params: any;
+  query: any;
 }
 
 export interface ApiResponse<T = any> {

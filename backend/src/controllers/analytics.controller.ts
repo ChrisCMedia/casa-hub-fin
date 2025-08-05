@@ -141,7 +141,7 @@ export class AnalyticsController {
     
     campaignsWithKpis.forEach(campaign => {
       campaign.kpis.forEach(kpi => {
-        if (kpi.target > 0) {
+        if (kpi.target.toNumber() > 0) {
           totalPerformance += (kpi.current.toNumber() / kpi.target.toNumber()) * 100;
           performanceCount++;
         }
@@ -199,7 +199,7 @@ export class AnalyticsController {
     const [newTodos, newLeads, publishedPosts] = recentActivity;
 
     const dashboardStats = {
-      todosOverview,
+      todoOverview,
       campaignsOverview,
       leadsOverview,
       socialMediaOverview,
@@ -254,7 +254,7 @@ export class AnalyticsController {
       metric: kpi.metric,
       target: kpi.target.toNumber(),
       current: kpi.current.toNumber(),
-      achievement: kpi.target > 0 ? (kpi.current.toNumber() / kpi.target.toNumber()) * 100 : 0,
+      achievement: kpi.target.toNumber() > 0 ? (kpi.current.toNumber() / kpi.target.toNumber()) * 100 : 0,
       unit: kpi.unit,
     }));
 

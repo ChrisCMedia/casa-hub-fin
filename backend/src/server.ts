@@ -8,6 +8,8 @@ import { Server } from 'socket.io';
 
 import { logger } from '@/config/logger';
 import { errorHandler, notFoundHandler } from '@/middleware/error';
+import prisma from '@/config/database';
+import redis from '@/config/redis';
 
 // Import routes
 import authRoutes from '@/routes/auth.routes';

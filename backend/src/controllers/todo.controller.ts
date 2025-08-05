@@ -7,7 +7,7 @@ import { logger } from '@/config/logger';
 import { TodoPriority, TodoStatus, UserRole } from '@prisma/client';
 
 export class TodoController {
-  static getTodos = asyncHandler(async (req: AuthenticatedRequest<{}, ApiResponse, {}, TodoFilters>, res: Response<ApiResponse>) => {
+  static getTodos = asyncHandler(async (req: AuthenticatedRequest, res: Response<ApiResponse>) => {
     const { page, limit, skip, sortBy, sortOrder } = getPaginationParams(req.query);
     const { status, priority, assignedTo, tags, dueDate } = req.query;
 

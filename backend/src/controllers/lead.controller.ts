@@ -7,7 +7,7 @@ import { logger } from '@/config/logger';
 import { LeadStatus, LeadSource, UserRole } from '@prisma/client';
 
 export class LeadController {
-  static getLeads = asyncHandler(async (req: AuthenticatedRequest<{}, ApiResponse, {}, LeadFilters>, res: Response<ApiResponse>) => {
+  static getLeads = asyncHandler(async (req: AuthenticatedRequest, res: Response<ApiResponse>) => {
     const { page, limit, skip, sortBy, sortOrder } = getPaginationParams(req.query);
     const { status, source, assignedAgent, minScore, maxScore } = req.query;
 

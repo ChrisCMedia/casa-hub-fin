@@ -30,7 +30,7 @@ export class AuthUtils {
   }
 
   static generateAccessToken(payload: JWTPayload): string {
-    return jwt.sign(payload, this.JWT_SECRET, {
+    return jwt.sign(payload, this.JWT_SECRET as string, {
       expiresIn: this.JWT_EXPIRES_IN,
       issuer: 'casa-hub-api',
       audience: 'casa-hub-frontend',
@@ -38,7 +38,7 @@ export class AuthUtils {
   }
 
   static generateRefreshToken(payload: JWTPayload): string {
-    return jwt.sign(payload, this.JWT_REFRESH_SECRET, {
+    return jwt.sign(payload, this.JWT_REFRESH_SECRET as string, {
       expiresIn: this.JWT_REFRESH_EXPIRES_IN,
       issuer: 'casa-hub-api',
       audience: 'casa-hub-frontend',

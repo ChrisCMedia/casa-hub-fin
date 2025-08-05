@@ -7,7 +7,7 @@ import { logger } from '@/config/logger';
 import { CampaignType, CampaignStatus, UserRole } from '@prisma/client';
 
 export class CampaignController {
-  static getCampaigns = asyncHandler(async (req: AuthenticatedRequest<{}, ApiResponse, {}, CampaignFilters>, res: Response<ApiResponse>) => {
+  static getCampaigns = asyncHandler(async (req: AuthenticatedRequest, res: Response<ApiResponse>) => {
     const { page, limit, skip, sortBy, sortOrder } = getPaginationParams(req.query);
     const { status, type, property, startDate, endDate } = req.query;
 
@@ -81,7 +81,7 @@ export class CampaignController {
     // Calculate performance metrics for each campaign
     const campaignsWithMetrics = campaigns.map(campaign => {
       const performance = campaign.kpis.reduce((acc, kpi) => {
-        if (kpi.target > 0) {
+        if (kpi.target.toNumber() > 0) {
           acc.push((kpi.current.toNumber() / kpi.target.toNumber()) * 100);
         }
         return acc;
@@ -161,7 +161,7 @@ export class CampaignController {
 
     // Calculate performance metrics
     const performance = campaign.kpis.reduce((acc, kpi) => {
-      if (kpi.target > 0) {
+      if (kpi.target.toNumber() > 0) {
         acc.push((kpi.current.toNumber() / kpi.target.toNumber()) * 100);
       }
       return acc;
@@ -178,7 +178,7 @@ export class CampaignController {
         budgetUsed: (campaign.spent.toNumber() / campaign.budget.toNumber()) * 100,
         kpiAchievement: campaign.kpis.map(kpi => ({
           metric: kpi.metric,
-          achievement: kpi.target > 0 ? (kpi.current.toNumber() / kpi.target.toNumber()) * 100 : 0,
+          achievement: kpi.target.toNumber() > 0 ? (kpi.current.toNumber() / kpi.target.toNumber()) * 100 : 0,
         })),
       },
     };

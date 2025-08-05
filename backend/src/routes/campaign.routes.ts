@@ -37,15 +37,13 @@ router.get('/:id',
 // Create campaign (editors and admins only)
 router.post('/',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
-    ...validateRequired(['name', 'type', 'budget', 'startDate', 'endDate']),
-    validateOptionalString('propertyId'),
-    validateOptionalString('targetAudience', 500),
-    validateOptionalArray('platforms', 10),
-    validateNumber('budget', 0),
-    validateDate('startDate'),
-    validateDate('endDate'),
-  ],
+  ...validateRequired(['name', 'type', 'budget', 'startDate', 'endDate']),
+  validateOptionalString('propertyId'),
+  validateOptionalString('targetAudience', 500),
+  validateOptionalArray('platforms', 10),
+  validateNumber('budget', 0),
+  validateDate('startDate'),
+  validateDate('endDate'),
   handleValidationErrors,
   CampaignController.createCampaign
 );
