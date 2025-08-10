@@ -98,7 +98,7 @@ app.get('/health', async (req, res) => {
 app.post('/api/auth/register', AuthController.register);
 app.post('/api/auth/login', AuthController.login);
 app.post('/api/auth/refresh', AuthController.refreshToken);
-app.get('/api/auth/me', authenticate, AuthController.getProfile);
+app.get('/api/auth/me', authenticate, AuthController.me);
 app.put('/api/auth/profile', authenticate, AuthController.updateProfile);
 app.put('/api/auth/password', authenticate, AuthController.changePassword);
 app.delete('/api/auth/account', authenticate, AuthController.deleteAccount);
@@ -155,7 +155,7 @@ app.put('/api/leads/:id/score', authenticate, LeadController.updateScore);
 // Analytics routes
 app.get('/api/analytics/dashboard', authenticate, AnalyticsController.getDashboardStats);
 app.get('/api/analytics/campaigns/:id', authenticate, AnalyticsController.getCampaignAnalytics);
-app.get('/api/analytics/social-media', authenticate, AnalyticsController.getSocialMediaAnalytics);
+app.get('/api/analytics/leads', authenticate, AnalyticsController.getLeadAnalytics);
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

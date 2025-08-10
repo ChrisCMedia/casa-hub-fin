@@ -20,14 +20,14 @@ router.use(authenticate);
 
 // Get posts with filtering and pagination
 router.get('/',
-  validatePagination,
+  ...(validatePagination as unknown as any[]),
   handleValidationErrors,
   LinkedInController.getPosts
 );
 
 // Get single post
 router.get('/:id',
-  validateUUID('id'),
+  ...(validateUUID('id') as unknown as any[]),
   handleValidationErrors,
   LinkedInController.getPost
 );
@@ -35,12 +35,12 @@ router.get('/:id',
 // Create post (editors and admins can create posts)
 router.post('/',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateRequired(['content']),
     validateOptionalArray('hashtags', 20),
     validateOptionalDate('scheduledDate'),
     validateOptionalString('campaignId'),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   LinkedInController.createPost
 );
@@ -48,13 +48,13 @@ router.post('/',
 // Update post
 router.put('/:id',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     validateOptionalString('content', 3000),
     validateOptionalArray('hashtags', 20),
     validateOptionalDate('scheduledDate'),
     validateOptionalString('campaignId'),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   LinkedInController.updatePost
 );
@@ -62,7 +62,7 @@ router.put('/:id',
 // Delete post
 router.delete('/:id',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  validateUUID('id'),
+  ...(validateUUID('id') as unknown as any[]),
   handleValidationErrors,
   LinkedInController.deletePost
 );
@@ -70,7 +70,7 @@ router.delete('/:id',
 // Submit post for approval
 router.post('/:id/submit',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  validateUUID('id'),
+  ...(validateUUID('id') as unknown as any[]),
   handleValidationErrors,
   LinkedInController.submitForApproval
 );
@@ -78,11 +78,11 @@ router.post('/:id/submit',
 // Approve/reject post (editors and admins only)
 router.post('/:id/approve',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     ...validateRequired(['approved']),
     validateOptionalString('feedback', 500),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   LinkedInController.approvePost
 );
@@ -90,10 +90,10 @@ router.post('/:id/approve',
 // Schedule approved post
 router.post('/:id/schedule',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     ...validateRequired(['scheduledDate']),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   LinkedInController.schedulePost
 );
@@ -101,10 +101,10 @@ router.post('/:id/schedule',
 // Add media to post
 router.post('/:id/media',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     ...validateRequired(['filename', 'url', 'mediaType']),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   LinkedInController.addMedia
 );
@@ -112,7 +112,7 @@ router.post('/:id/media',
 // Update post analytics (admin only)
 router.put('/:id/analytics',
   authorize(UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     validateOptionalNumber('views', 0),
     validateOptionalNumber('likes', 0),
@@ -120,7 +120,7 @@ router.put('/:id/analytics',
     validateOptionalNumber('shares', 0),
     validateOptionalNumber('clickThroughRate', 0, 100),
     validateOptionalNumber('engagement', 0, 100),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   LinkedInController.updateAnalytics
 );

@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { User } from '@prisma/client';
@@ -30,19 +30,27 @@ export class AuthUtils {
   }
 
   static generateAccessToken(payload: JWTPayload): string {
-    return jwt.sign(payload, this.JWT_SECRET as string, {
-      expiresIn: this.JWT_EXPIRES_IN,
-      issuer: 'casa-hub-api',
-      audience: 'casa-hub-frontend',
-    });
+    return jwt.sign(
+      payload,
+      this.JWT_SECRET as unknown as jwt.Secret,
+      {
+        expiresIn: this.JWT_EXPIRES_IN as any,
+        issuer: 'casa-hub-api',
+        audience: 'casa-hub-frontend',
+      } as any
+    );
   }
 
   static generateRefreshToken(payload: JWTPayload): string {
-    return jwt.sign(payload, this.JWT_REFRESH_SECRET as string, {
-      expiresIn: this.JWT_REFRESH_EXPIRES_IN,
-      issuer: 'casa-hub-api',
-      audience: 'casa-hub-frontend',
-    });
+    return jwt.sign(
+      payload,
+      this.JWT_REFRESH_SECRET as unknown as jwt.Secret,
+      {
+        expiresIn: this.JWT_REFRESH_EXPIRES_IN as any,
+        issuer: 'casa-hub-api',
+        audience: 'casa-hub-frontend',
+      } as any
+    );
   }
 
   static generateTokenPair(user: User): TokenPair {

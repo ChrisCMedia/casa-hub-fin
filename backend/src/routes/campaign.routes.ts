@@ -22,14 +22,14 @@ router.use(authenticate);
 
 // Get campaigns with filtering and pagination
 router.get('/',
-  validatePagination,
+  ...(validatePagination as unknown as any[]),
   handleValidationErrors,
   CampaignController.getCampaigns
 );
 
 // Get single campaign
 router.get('/:id',
-  validateUUID('id'),
+  ...(validateUUID('id') as unknown as any[]),
   handleValidationErrors,
   CampaignController.getCampaign
 );
@@ -37,13 +37,15 @@ router.get('/:id',
 // Create campaign (editors and admins only)
 router.post('/',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  ...validateRequired(['name', 'type', 'budget', 'startDate', 'endDate']),
-  validateOptionalString('propertyId'),
-  validateOptionalString('targetAudience', 500),
-  validateOptionalArray('platforms', 10),
-  validateNumber('budget', 0),
-  validateDate('startDate'),
-  validateDate('endDate'),
+  ...([ 
+    ...validateRequired(['name', 'type', 'budget', 'startDate', 'endDate']),
+    validateOptionalString('propertyId'),
+    validateOptionalString('targetAudience', 500),
+    validateOptionalArray('platforms', 10),
+    validateNumber('budget', 0),
+    validateDate('startDate'),
+    validateDate('endDate'),
+  ] as unknown as any[]),
   handleValidationErrors,
   CampaignController.createCampaign
 );
@@ -51,7 +53,7 @@ router.post('/',
 // Update campaign
 router.put('/:id',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     validateOptionalString('name', 255),
     validateOptionalString('propertyId'),
@@ -61,7 +63,7 @@ router.put('/:id',
     validateOptionalNumber('spent', 0),
     validateOptionalString('targetAudience', 500),
     validateOptionalArray('platforms', 10),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   CampaignController.updateCampaign
 );
@@ -69,7 +71,7 @@ router.put('/:id',
 // Delete campaign
 router.delete('/:id',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  validateUUID('id'),
+  ...(validateUUID('id') as unknown as any[]),
   handleValidationErrors,
   CampaignController.deleteCampaign
 );
@@ -77,11 +79,11 @@ router.delete('/:id',
 // Add KPI to campaign
 router.post('/:id/kpis',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     ...validateRequired(['metric', 'target', 'unit']),
     validateNumber('target', 0),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   CampaignController.addKPI
 );
@@ -89,14 +91,14 @@ router.post('/:id/kpis',
 // Update campaign KPI
 router.put('/:id/kpis/:kpiId',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     ...validateUUID('kpiId'),
     validateOptionalString('metric', 100),
     validateOptionalNumber('target', 0),
     validateOptionalNumber('current', 0),
     validateOptionalString('unit', 50),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   CampaignController.updateKPI
 );
@@ -104,10 +106,10 @@ router.put('/:id/kpis/:kpiId',
 // Delete campaign KPI
 router.delete('/:id/kpis/:kpiId',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     ...validateUUID('kpiId'),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   CampaignController.deleteKPI
 );

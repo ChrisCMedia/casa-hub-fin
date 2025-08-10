@@ -19,19 +19,19 @@ router.get('/dashboard',
 
 // Campaign analytics
 router.get('/campaigns/:id',
-  [
+  ...([
     ...validateUUID('id'),
     validateOptionalString('period'),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   AnalyticsController.getCampaignAnalytics
 );
 
 // Lead analytics
 router.get('/leads',
-  [
+  ...([
     validateOptionalString('period'),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   AnalyticsController.getLeadAnalytics
 );

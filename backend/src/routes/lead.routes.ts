@@ -22,14 +22,14 @@ router.use(authenticate);
 
 // Get leads with filtering and pagination
 router.get('/',
-  validatePagination,
+  ...(validatePagination as unknown as any[]),
   handleValidationErrors,
   LeadController.getLeads
 );
 
 // Get single lead
 router.get('/:id',
-  validateUUID('id'),
+  ...(validateUUID('id') as unknown as any[]),
   handleValidationErrors,
   LeadController.getLead
 );
@@ -37,7 +37,7 @@ router.get('/:id',
 // Create lead (editors and admins only)
 router.post('/',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateRequired(['name', 'email', 'source']),
     ...validateEmail('email'),
     validateOptionalString('phone', 50),
@@ -46,7 +46,7 @@ router.post('/',
     validateOptionalString('notes', 1000),
     validateOptionalString('assignedAgent'),
     validateOptionalArray('propertyInterests', 20),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   LeadController.createLead
 );
@@ -54,7 +54,7 @@ router.post('/',
 // Update lead
 router.put('/:id',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     validateOptionalString('name', 255),
     validateOptionalString('email', 255),
@@ -65,7 +65,7 @@ router.put('/:id',
     validateOptionalNumber('budgetMax', 0),
     validateOptionalString('notes', 1000),
     validateOptionalString('assignedAgent'),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   LeadController.updateLead
 );
@@ -73,7 +73,7 @@ router.put('/:id',
 // Delete lead
 router.delete('/:id',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  validateUUID('id'),
+  ...(validateUUID('id') as unknown as any[]),
   handleValidationErrors,
   LeadController.deleteLead
 );
@@ -81,10 +81,10 @@ router.delete('/:id',
 // Add property interest to lead
 router.post('/:id/properties',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     ...validateRequired(['propertyId']),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   LeadController.addPropertyInterest
 );
@@ -92,10 +92,10 @@ router.post('/:id/properties',
 // Remove property interest from lead
 router.delete('/:id/properties/:propertyId',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     ...validateUUID('propertyId'),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   LeadController.removePropertyInterest
 );
@@ -103,10 +103,10 @@ router.delete('/:id/properties/:propertyId',
 // Update lead score
 router.put('/:id/score',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     validateOptionalNumber('score', 0, 100),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   LeadController.updateScore
 );

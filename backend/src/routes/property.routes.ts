@@ -22,14 +22,14 @@ router.use(authenticate);
 
 // Get properties with filtering and pagination
 router.get('/',
-  validatePagination,
+  ...(validatePagination as unknown as any[]),
   handleValidationErrors,
   PropertyController.getProperties
 );
 
 // Get single property
 router.get('/:id',
-  validateUUID('id'),
+  ...(validateUUID('id') as unknown as any[]),
   handleValidationErrors,
   PropertyController.getProperty
 );
@@ -37,7 +37,7 @@ router.get('/:id',
 // Create property (editors and admins only)
 router.post('/',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateRequired(['title', 'address', 'type', 'price', 'area', 'rooms', 'listingDate']),
     validateOptionalString('description', 2000),
     validateOptionalArray('features', 20),
@@ -46,7 +46,7 @@ router.post('/',
     validateNumber('area', 0),
     validateNumber('rooms', 1),
     validateDate('listingDate'),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   PropertyController.createProperty
 );
@@ -54,7 +54,7 @@ router.post('/',
 // Update property
 router.put('/:id',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     validateOptionalString('title', 255),
     validateOptionalString('address', 500),
@@ -66,7 +66,7 @@ router.put('/:id',
     validateOptionalString('description', 2000),
     validateOptionalArray('features', 20),
     validateOptionalString('agentId'),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   PropertyController.updateProperty
 );
@@ -74,7 +74,7 @@ router.put('/:id',
 // Delete property
 router.delete('/:id',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  validateUUID('id'),
+  ...(validateUUID('id') as unknown as any[]),
   handleValidationErrors,
   PropertyController.deleteProperty
 );
@@ -82,11 +82,11 @@ router.delete('/:id',
 // Add image to property
 router.post('/:id/images',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     ...validateRequired(['imageUrl']),
     validateOptionalString('caption', 255),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   PropertyController.addImage
 );
@@ -94,12 +94,12 @@ router.post('/:id/images',
 // Update property image
 router.put('/:id/images/:imageId',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     ...validateUUID('imageId'),
     validateOptionalString('caption', 255),
     validateOptionalNumber('sortOrder', 0),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   PropertyController.updateImage
 );
@@ -107,10 +107,10 @@ router.put('/:id/images/:imageId',
 // Delete property image
 router.delete('/:id/images/:imageId',
   authorize(UserRole.EDITOR, UserRole.ADMIN),
-  [
+  ...([
     ...validateUUID('id'),
     ...validateUUID('imageId'),
-  ],
+  ] as unknown as any[]),
   handleValidationErrors,
   PropertyController.deleteImage
 );
